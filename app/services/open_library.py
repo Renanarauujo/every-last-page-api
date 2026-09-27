@@ -7,7 +7,7 @@ from typing import Any
 
 import httpx
 
-from app.models.book import OL_KEY_RE, TITLE_MAX, BookHit, Genre, Language, SearchField, SearchSort
+from app.models.book import OL_KEY_RE, TITLE_MAX, BookHit, Language, SearchField, SearchSort
 from app.services.genres import classify
 
 SEARCH_URL = "https://openlibrary.org/search.json"
@@ -82,34 +82,6 @@ def _parse(doc: Any) -> BookHit | None:
         cover_url=COVER_URL.format(id=cover) if cover else None,
         genre=classify(doc.get("subject") if isinstance(doc.get("subject"), list) else None),
     )
-
-
-MIN_SUBJECTS = 3
-TITLE_DOCS = 3
-
-
-def genre_of(client: httpx.Client, ol_key: str, title: str = "", author: str | None = None) -> Genre:
-    """Retorna o tipo da obra pelos assuntos; com poucos assuntos, soma os de uma busca por titulo e autor."""
-    subjects = _subjects(client, {"q": f"key:{ol_key}", "limit": 1})
-    if len(subjects) < MIN_SUBJECTS and title:
-        subjects += _subjects(client, {"q": f"{title} {author or ''}".strip(), "limit": TITLE_DOCS})
-    return classify(subjects)
-
-
-def _subjects(client: httpx.Client, params: dict[str, Any]) -> list[str]:
-    """Assuntos dos documentos da busca. Lanca `Unavailable` em caso de falha."""
-    try:
-        res = client.get(SEARCH_URL, params={**params, "fields": "key,subject"})
-        res.raise_for_status()
-        docs = res.json().get("docs", [])
-    except (httpx.HTTPError, ValueError, AttributeError) as err:
-        raise Unavailable(str(err)) from err
-    out = []
-    for doc in docs:
-        subjects = doc.get("subject") if isinstance(doc, dict) else None
-        if isinstance(subjects, list):
-            out += [s for s in subjects if isinstance(s, str)]
-    return out
 
 
 def _fix(text: str) -> str:

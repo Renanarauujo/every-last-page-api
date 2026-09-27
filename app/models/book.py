@@ -207,13 +207,6 @@ class Insights(BaseModel):
     favorite: Favorite | None
 
 
-class GenreFill(BaseModel):
-    """Result of filling missing book types."""
-
-    updated: int
-    failed: int
-
-
 class BookHit(BaseModel):
     """Open Library search result."""
 

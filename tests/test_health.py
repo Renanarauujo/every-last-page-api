@@ -1,4 +1,4 @@
-"""Testes das rotas de saude e raiz."""
+"""Testes da rota de saude."""
 
 
 def test_health(client):
@@ -6,8 +6,3 @@ def test_health(client):
     assert res.status_code == 200
     assert res.json() == {"status": "ok"}
 
-
-def test_root(client):
-    res = client.get("/")
-    assert res.status_code == 200
-    assert res.json() == {"name": "Every Last Page API", "docs": "/docs"}

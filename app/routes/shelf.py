@@ -1,16 +1,14 @@
 """Rotas da estante."""
 
-import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.models.book import BookEdit, BookIn, BookOut, GenreFill, Insights, Order, Status, Summary
+from app.models.book import BookEdit, BookIn, BookOut, Insights, Order, Status, Summary
 from app.models.book_orm import Book
-from app.security import search_limit
-from app.services import insights, open_library, reading
+from app.services import insights, reading
 
 router = APIRouter(prefix="/shelf", tags=["shelf"])
 
@@ -68,32 +66,6 @@ def profile(db: Session = Depends(get_db)):
     """Return the reading profile: liked and avoided authors, sizes and pace."""
     books = db.scalars(select(Book)).all()
     return Insights(**insights.insights(books))
-
-
-@router.post("/genres", response_model=GenreFill, dependencies=[Depends(search_limit)])
-def fill_genres(
-    refresh: bool = False,
-    db: Session = Depends(get_db),
-    client: httpx.Client = Depends(open_library.get_client),
-):
-    """Fill the type of books saved without one (or of all books, with refresh=true), using Open Library subjects."""
-    query = select(Book) if refresh else select(Book).where(Book.genre.is_(None))
-    missing = db.scalars(query).all()
-    updated = failed = 0
-    for book in missing:
-        try:
-            book.genre = open_library.genre_of(client, book.ol_key, book.title, book.author).value
-            updated += 1
-        except open_library.Unavailable:
-            failed += 1
-    db.commit()
-    return GenreFill(updated=updated, failed=failed)
-
-
-@router.get("/{id}", response_model=BookOut)
-def get(id: int, db: Session = Depends(get_db)):
-    """Return a book from the shelf."""
-    return _find(db, id)
 
 
 @router.put("/{id}", response_model=BookOut)

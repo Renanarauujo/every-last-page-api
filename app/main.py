@@ -29,8 +29,3 @@ app.include_router(health.router)
 app.include_router(books.router)
 app.include_router(shelf.router)
 
-
-@app.get("/", tags=["health"])
-def root():
-    """Return the API name and the documentation address."""
-    return {"name": app.title, "docs": "/docs"}

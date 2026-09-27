@@ -47,14 +47,13 @@ def test_add_search_hit(client, book):
     assert client.post("/shelf", json=hit).status_code == 201
 
 
-def test_list_and_get(client, book):
+def test_list(client, book):
     b = add(client, book)
     assert [x["id"] for x in client.get("/shelf").json()] == [b["id"]]
-    assert client.get(f"/shelf/{b['id']}").json()["title"] == "Dom Casmurro"
 
 
-def test_get_missing(client):
-    res = client.get("/shelf/999")
+def test_missing(client):
+    res = client.put("/shelf/999", json={"rating": 3})
     assert res.status_code == 404
     assert res.json()["detail"] == "Livro nao encontrado na estante."
 
@@ -125,7 +124,6 @@ def test_remove(client, book):
     res = client.delete(f"/shelf/{b['id']}")
     assert res.status_code == 204
     assert res.content == b""
-    assert client.get(f"/shelf/{b['id']}").status_code == 404
     assert client.delete(f"/shelf/{b['id']}").status_code == 404
 
 
@@ -181,5 +179,5 @@ def test_update_dates_invalid(client, book):
     res = client.put(f"/shelf/{b['id']}", json={"started_at": "2026-01-02"})
     assert res.status_code == 422
     assert res.json()["detail"] == "Livro em Quero ler nao tem datas de leitura."
-    assert client.get(f"/shelf/{b['id']}").json()["started_at"] is None
+    assert client.get("/shelf").json()[0]["started_at"] is None
     assert client.put(f"/shelf/{b['id']}", json={"started_at": "ontem"}).status_code == 422

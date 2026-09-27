@@ -66,8 +66,6 @@ Nenhuma chave é necessária: a Open Library é pública e não pede cadastro.
 | GET | `/shelf?status=&order=` | Lista a estante, com filtro e ordenação | 200, 422 |
 | GET | `/shelf/summary` | Números do painel | 200 |
 | GET | `/shelf/insights` | Perfil de leitura: tipos e autores preferidos e evitados (top 3), tamanhos, ritmo e favorito | 200 |
-| POST | `/shelf/genres?refresh=` | Preenche o tipo dos livros sem tipo (ou de todos, com `refresh=true`) a partir dos assuntos da Open Library | 200, 429 |
-| GET | `/shelf/{id}` | Detalha um livro | 200, 404 |
 | PUT | `/shelf/{id}` | Atualiza status, nota, comentário e datas de leitura | 200, 404, 422 |
 | DELETE | `/shelf/{id}` | Remove um livro | 204, 404 |
 

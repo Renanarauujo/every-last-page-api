@@ -1,4 +1,4 @@
-"""Testes do tipo do livro: classificacao, edicao, preenchimento e perfil."""
+"""Testes do tipo do livro: classificacao, edicao e perfil."""
 
 import httpx
 import pytest
@@ -48,22 +48,6 @@ def test_add_and_edit_genre(client, book):
     assert client.put(f"/shelf/{b['id']}", json={"genre": "sermao"}).status_code == 422
 
 
-def test_fill_genres(client, book):
-    client.post("/shelf", json=book)
-    client.post("/shelf", json={**book, "ol_key": "/works/OL2W", "genre": "poetry"})
-    seen = []
-
-    def handler(req):
-        seen.append(req.url.params["q"])
-        return httpx.Response(200, json={"docs": [{"key": "/works/OL45804W", "subject": ["Fiction", "Brazilian fiction", "Novel"]}]})
-
-    app.dependency_overrides[open_library.get_client] = lambda: httpx.Client(transport=httpx.MockTransport(handler))
-    res = client.post("/shelf/genres")
-    assert res.json() == {"updated": 1, "failed": 0}
-    assert seen == ["key:/works/OL45804W"]
-    assert [x["genre"] for x in client.get("/shelf", params={"order": "oldest"}).json()] == ["fiction", "poetry"]
-
-
 def test_insights_by_genre(client, book):
     a = client.post("/shelf", json={**book, "genre": "fantasy"}).json()
     b = client.post("/shelf", json={**book, "ol_key": "/works/OL2W", "genre": "fiction"}).json()
@@ -81,27 +65,3 @@ def test_migration_adds_genre_column(monkeypatch, tmp_path):
     monkeypatch.setattr(db_module, "engine", engine)
     db_module._add_missing_columns()
     assert "genre" in {c["name"] for c in inspect(engine).get_columns("books")}
-
-
-def test_fill_genres_uses_title_when_key_has_few_subjects(client, book):
-    client.post("/shelf", json=book)
-    seen = []
-
-    def handler(req):
-        seen.append(req.url.params["q"])
-        subjects = [] if req.url.params["q"].startswith("key:") else ["Fiction", "Brazilian fiction", "Novel"]
-        return httpx.Response(200, json={"docs": [{"subject": subjects}]})
-
-    app.dependency_overrides[open_library.get_client] = lambda: httpx.Client(transport=httpx.MockTransport(handler))
-    assert client.post("/shelf/genres").json() == {"updated": 1, "failed": 0}
-    assert seen == ["key:/works/OL45804W", "Dom Casmurro Machado de Assis"]
-    assert client.get("/shelf").json()[0]["genre"] == "fiction"
-
-
-def test_fill_genres_refresh(client, book):
-    client.post("/shelf", json={**book, "genre": "poetry"})
-    app.dependency_overrides[open_library.get_client] = lambda: httpx.Client(transport=httpx.MockTransport(
-        lambda r: httpx.Response(200, json={"docs": [{"subject": ["Fiction", "Novel", "Literature"]}]})))
-    assert client.post("/shelf/genres").json() == {"updated": 0, "failed": 0}
-    assert client.post("/shelf/genres", params={"refresh": "true"}).json() == {"updated": 1, "failed": 0}
-    assert client.get("/shelf").json()[0]["genre"] == "fiction"
