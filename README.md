@@ -63,6 +63,7 @@ Nenhuma chave é necessária: a Open Library é pública e não pede cadastro.
 | POST | `/shelf` | Adiciona um livro à estante | 201, 409, 422 |
 | GET | `/shelf?status=&order=` | Lista a estante, com filtro e ordenação | 200, 422 |
 | GET | `/shelf/summary` | Números do painel | 200 |
+| GET | `/shelf/insights` | Perfil de leitura: autores preferidos e evitados, tamanhos, ritmo e favorito | 200 |
 | GET | `/shelf/{id}` | Detalha um livro | 200, 404 |
 | PUT | `/shelf/{id}` | Atualiza status, nota, comentário e datas de leitura | 200, 404, 422 |
 | DELETE | `/shelf/{id}` | Remove um livro | 204, 404 |
@@ -138,6 +139,7 @@ app/
   routes/books.py           GET /books/search
   routes/shelf.py           CRUD /shelf
   services/reading.py       regras de status e resumo
+  services/insights.py      perfil de leitura
   services/open_library.py  cliente da Open Library
 tests/                      testes com pytest
 ```
