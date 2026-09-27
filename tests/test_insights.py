@@ -61,3 +61,14 @@ def test_route(client):
     assert res.status_code == 200
     assert res.json()["liked_authors"] == [{"author": "Autor", "books": 1, "avg_rating": 5.0}]
     assert res.json()["favorite"]["title"] == "Livro"
+
+
+def test_group_is_never_liked_and_disliked():
+    books = [book(t, "Autor", "read", 5) for t in "ABCD"] + [book("E", "Autor", "dropped"),
+             book("F", "Outro", "read", 4), book("G", "Outro", "dropped"), book("H", "Outro", "read", 1)]
+    res = insights(books)
+    liked = {a["author"] for a in res["liked_authors"]}
+    disliked = {a["author"] for a in res["disliked_authors"]}
+    assert liked == {"Autor"}
+    assert disliked == {"Outro"}
+    assert not liked & disliked

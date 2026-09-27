@@ -41,33 +41,40 @@ def insights(books: list[Any]) -> dict[str, Any]:
     }
 
 
-def _liked(books: list[Any], key: Callable[[Any], str | None], name: str) -> list[dict[str, Any]]:
-    """Grupos (autor ou tipo) com nota media a partir de LIKED_MIN, mais lidos primeiro."""
-    ratings, count = defaultdict(list), defaultdict(int)
+def _groups(books: list[Any], key: Callable[[Any], str | None]) -> dict[str, dict[str, Any]]:
+    """Agrupa por autor ou tipo: quantidade, notas, bem avaliados, abandonos e notas baixas."""
+    groups = defaultdict(lambda: {"books": 0, "ratings": [], "good": 0, "dropped": 0, "low_rated": 0})
     for b in books:
-        group = key(b)
-        if not group:
+        name = key(b)
+        if not name:
             continue
-        count[group] += 1
+        g = groups[name]
+        g["books"] += 1
         if b.rating is not None:
-            ratings[group].append(b.rating)
-    out = [{name: g, "books": count[g], "avg_rating": round(sum(r) / len(r), DIGITS)}
-           for g, r in ratings.items() if sum(r) / len(r) >= LIKED_MIN]
+            g["ratings"].append(b.rating)
+            g["good"] += b.rating >= LIKED_MIN
+            g["low_rated"] += b.rating <= DISLIKED_MAX
+        g["dropped"] += b.status == Status.dropped.value
+    return groups
+
+
+def _bad(g: dict[str, Any]) -> int:
+    """Abandonos mais notas baixas."""
+    return g["dropped"] + g["low_rated"]
+
+
+def _liked(books: list[Any], key: Callable[[Any], str | None], name: str) -> list[dict[str, Any]]:
+    """Grupos com media a partir de LIKED_MIN e mais bem avaliados do que abandonos e notas baixas."""
+    out = [{name: n, "books": g["books"], "avg_rating": round(sum(g["ratings"]) / len(g["ratings"]), DIGITS)}
+           for n, g in _groups(books, key).items()
+           if g["ratings"] and sum(g["ratings"]) / len(g["ratings"]) >= LIKED_MIN and g["good"] > _bad(g)]
     return sorted(out, key=lambda a: (-a["books"], -a["avg_rating"], a[name]))[:TOP]
 
 
 def _disliked(books: list[Any], key: Callable[[Any], str | None], name: str) -> list[dict[str, Any]]:
-    """Grupos (autor ou tipo) com livro abandonado ou nota ate DISLIKED_MAX."""
-    marks = defaultdict(lambda: {"dropped": 0, "low_rated": 0})
-    for b in books:
-        group = key(b)
-        if not group:
-            continue
-        if b.status == Status.dropped.value:
-            marks[group]["dropped"] += 1
-        if b.rating is not None and b.rating <= DISLIKED_MAX:
-            marks[group]["low_rated"] += 1
-    out = [{name: g, **m} for g, m in marks.items() if m["dropped"] or m["low_rated"]]
+    """Grupos com abandonos e notas baixas em numero igual ou maior que os bem avaliados."""
+    out = [{name: n, "dropped": g["dropped"], "low_rated": g["low_rated"]}
+           for n, g in _groups(books, key).items() if _bad(g) and _bad(g) >= g["good"]]
     return sorted(out, key=lambda a: (-(a["dropped"] + a["low_rated"]), a[name]))[:TOP]
 
 
