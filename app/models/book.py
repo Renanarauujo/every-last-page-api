@@ -77,7 +77,14 @@ class SearchSort(str, Enum):
 class BookIn(BaseModel):
     """Body of POST /shelf. Extra fields are ignored."""
 
-    model_config = ConfigDict(extra="ignore")
+    model_config = ConfigDict(extra="ignore", json_schema_extra={"examples": [{
+        "ol_key": "/works/OL1003053W",
+        "title": "Memorial de Aires",
+        "author": "Machado de Assis",
+        "pages": 196,
+        "cover_id": 2664649,
+        "genre": "fiction",
+    }]})
 
     ol_key: str = Field(pattern=OL_KEY_RE, examples=["/works/OL45804W"])
     title: str = Field(min_length=1, max_length=TITLE_MAX)
@@ -90,7 +97,7 @@ class BookIn(BaseModel):
 class BookEdit(BaseModel):
     """Body of PUT /shelf/{id}. Only the fields sent are changed."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", json_schema_extra={"examples": [{"status": "reading"}]})
 
     status: Status | None = None
     rating: int | None = Field(default=None, ge=RATING_MIN, le=RATING_MAX)
