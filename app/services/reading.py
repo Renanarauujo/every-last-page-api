@@ -13,7 +13,7 @@ As datas registram o momento da troca de status. Reenviar o status atual nao alt
 from datetime import date, datetime, timezone
 from typing import Any
 
-from app.models.book import Status
+from app.models.book import Genre, Status
 
 MONTHS = 6
 DIGITS = 1
@@ -40,6 +40,8 @@ def update(book: Any, changes: dict[str, Any], at: datetime) -> None:
     for field in ("rating", "comment"):
         if field in changes:
             setattr(book, field, changes[field])
+    if "genre" in changes:
+        book.genre = Genre(changes["genre"]).value if changes["genre"] else None
 
     if changes.get("status") is not None:
         _set_status(book, Status(changes["status"]), at)

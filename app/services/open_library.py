@@ -7,13 +7,14 @@ from typing import Any
 
 import httpx
 
-from app.models.book import OL_KEY_RE, TITLE_MAX, BookHit, Language, SearchField, SearchSort
+from app.models.book import OL_KEY_RE, TITLE_MAX, BookHit, Genre, Language, SearchField, SearchSort
+from app.services.genres import classify
 
 SEARCH_URL = "https://openlibrary.org/search.json"
 COVER_URL = "https://covers.openlibrary.org/b/id/{id}-M.jpg"
 USER_AGENT = "EveryLastPage/1.0 (+https://github.com/Renanarauujo/every-last-page-api)"
 TIMEOUT = 8.0
-FIELDS = "key,title,author_name,number_of_pages_median,cover_i"
+FIELDS = "key,title,author_name,number_of_pages_median,cover_i,subject"
 MAX_AUTHORS = 2
 
 _KEY = re.compile(OL_KEY_RE)
@@ -79,7 +80,20 @@ def _parse(doc: Any) -> BookHit | None:
         pages=pages if isinstance(pages, int) and pages > 0 else None,
         cover_id=cover,
         cover_url=COVER_URL.format(id=cover) if cover else None,
+        genre=classify(doc.get("subject") if isinstance(doc.get("subject"), list) else None),
     )
+
+
+def genre_of(client: httpx.Client, ol_key: str) -> Genre:
+    """Busca os assuntos de uma obra pela chave e retorna o tipo. Lanca `Unavailable` em caso de falha."""
+    try:
+        res = client.get(SEARCH_URL, params={"q": f"key:{ol_key}", "fields": "key,subject", "limit": 1})
+        res.raise_for_status()
+        docs = res.json().get("docs", [])
+    except (httpx.HTTPError, ValueError, AttributeError) as err:
+        raise Unavailable(str(err)) from err
+    subjects = docs[0].get("subject") if docs and isinstance(docs[0], dict) else None
+    return classify(subjects if isinstance(subjects, list) else None)
 
 
 def _fix(text: str) -> str:

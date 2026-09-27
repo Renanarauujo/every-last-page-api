@@ -21,6 +21,7 @@ class Book(Base):
     author: Mapped[str | None] = mapped_column(String(300))
     pages: Mapped[int | None] = mapped_column(Integer)
     cover_id: Mapped[int | None] = mapped_column(Integer)
+    genre: Mapped[str | None] = mapped_column(String(20))
 
     # Dados do usuario.
     status: Mapped[str] = mapped_column(String(20))

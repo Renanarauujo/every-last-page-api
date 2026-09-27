@@ -1,6 +1,7 @@
-"""Perfil de leitura: o que o usuario gosta e evita, a partir dos livros ja iniciados."""
+"""Perfil de leitura: tipos e autores que o usuario gosta e evita, a partir dos livros ja iniciados."""
 
 from collections import defaultdict
+from collections.abc import Callable
 from typing import Any
 
 from app.models.book import Status
@@ -27,8 +28,10 @@ def insights(books: list[Any]) -> dict[str, Any]:
     liked = [b for b in started if b.rating is not None and b.rating >= LIKED_MIN]
     return {
         "books": len(started),
-        "liked_authors": _liked_authors(started),
-        "disliked_authors": _disliked_authors(started),
+        "liked_genres": _liked(started, genre, "genre"),
+        "disliked_genres": _disliked(started, genre, "genre"),
+        "liked_authors": _liked(started, author, "author"),
+        "disliked_authors": _disliked(started, author, "author"),
         "liked_pages": _avg([b.pages for b in liked if b.pages]),
         "dropped_pages": _avg([b.pages for b in dropped if b.pages]),
         "completion_rate": round(len(done) / (len(done) + len(dropped)) * PERCENT) if done or dropped else None,
@@ -38,34 +41,39 @@ def insights(books: list[Any]) -> dict[str, Any]:
     }
 
 
-def _liked_authors(books: list[Any]) -> list[dict[str, Any]]:
-    """Autores com nota media a partir de LIKED_MIN, mais lidos primeiro."""
+def _liked(books: list[Any], key: Callable[[Any], str | None], name: str) -> list[dict[str, Any]]:
+    """Grupos (autor ou tipo) com nota media a partir de LIKED_MIN, mais lidos primeiro."""
     ratings, count = defaultdict(list), defaultdict(int)
     for b in books:
-        name = author(b)
-        if not name:
+        group = key(b)
+        if not group:
             continue
-        count[name] += 1
+        count[group] += 1
         if b.rating is not None:
-            ratings[name].append(b.rating)
-    out = [{"author": n, "books": count[n], "avg_rating": round(sum(r) / len(r), DIGITS)}
-           for n, r in ratings.items() if sum(r) / len(r) >= LIKED_MIN]
-    return sorted(out, key=lambda a: (-a["books"], -a["avg_rating"], a["author"]))[:TOP]
+            ratings[group].append(b.rating)
+    out = [{name: g, "books": count[g], "avg_rating": round(sum(r) / len(r), DIGITS)}
+           for g, r in ratings.items() if sum(r) / len(r) >= LIKED_MIN]
+    return sorted(out, key=lambda a: (-a["books"], -a["avg_rating"], a[name]))[:TOP]
 
 
-def _disliked_authors(books: list[Any]) -> list[dict[str, Any]]:
-    """Autores com livro abandonado ou nota ate DISLIKED_MAX."""
+def _disliked(books: list[Any], key: Callable[[Any], str | None], name: str) -> list[dict[str, Any]]:
+    """Grupos (autor ou tipo) com livro abandonado ou nota ate DISLIKED_MAX."""
     marks = defaultdict(lambda: {"dropped": 0, "low_rated": 0})
     for b in books:
-        name = author(b)
-        if not name:
+        group = key(b)
+        if not group:
             continue
         if b.status == Status.dropped.value:
-            marks[name]["dropped"] += 1
+            marks[group]["dropped"] += 1
         if b.rating is not None and b.rating <= DISLIKED_MAX:
-            marks[name]["low_rated"] += 1
-    out = [{"author": n, **m} for n, m in marks.items() if m["dropped"] or m["low_rated"]]
-    return sorted(out, key=lambda a: (-(a["dropped"] + a["low_rated"]), a["author"]))[:TOP]
+            marks[group]["low_rated"] += 1
+    out = [{name: g, **m} for g, m in marks.items() if m["dropped"] or m["low_rated"]]
+    return sorted(out, key=lambda a: (-(a["dropped"] + a["low_rated"]), a[name]))[:TOP]
+
+
+def genre(book: Any) -> str | None:
+    """Retorna o tipo do livro, se conhecido."""
+    return getattr(book, "genre", None) or None
 
 
 def _days(book: Any) -> int | None:

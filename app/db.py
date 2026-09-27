@@ -3,7 +3,7 @@
 import os
 from collections.abc import Iterator
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./shelf.db")
@@ -32,3 +32,17 @@ def create_tables() -> None:
     from app.models import book_orm  # noqa: F401
 
     Base.metadata.create_all(engine)
+    _add_missing_columns()
+
+
+# Colunas criadas depois da primeira versao da tabela: nome e tipo SQL.
+NEW_COLUMNS = {"genre": "VARCHAR(20)"}
+
+
+def _add_missing_columns() -> None:
+    """Acrescenta a bancos existentes as colunas novas do modelo."""
+    have = {c["name"] for c in inspect(engine).get_columns("books")}
+    with engine.begin() as conn:
+        for name, sql_type in NEW_COLUMNS.items():
+            if name not in have:
+                conn.execute(text(f"ALTER TABLE books ADD COLUMN {name} {sql_type}"))

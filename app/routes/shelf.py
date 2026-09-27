@@ -1,14 +1,16 @@
 """Rotas da estante."""
 
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.models.book import BookEdit, BookIn, BookOut, Insights, Order, Status, Summary
+from app.models.book import BookEdit, BookIn, BookOut, GenreFill, Insights, Order, Status, Summary
 from app.models.book_orm import Book
-from app.services import insights, reading
+from app.security import search_limit
+from app.services import insights, open_library, reading
 
 router = APIRouter(prefix="/shelf", tags=["shelf"])
 
@@ -29,7 +31,7 @@ def add(data: BookIn, db: Session = Depends(get_db)):
     if db.scalar(select(Book.id).where(Book.ol_key == data.ol_key)) is not None:
         raise HTTPException(status.HTTP_409_CONFLICT, detail=DUPLICATE)
 
-    book = Book(**data.model_dump())
+    book = Book(**data.model_dump(mode="json"))
     reading.init(book, reading.now())
     db.add(book)
     try:
@@ -66,6 +68,21 @@ def profile(db: Session = Depends(get_db)):
     """Return the reading profile: liked and avoided authors, sizes and pace."""
     books = db.scalars(select(Book)).all()
     return Insights(**insights.insights(books))
+
+
+@router.post("/genres", response_model=GenreFill, dependencies=[Depends(search_limit)])
+def fill_genres(db: Session = Depends(get_db), client: httpx.Client = Depends(open_library.get_client)):
+    """Fill the type of books saved without one, using Open Library subjects."""
+    missing = db.scalars(select(Book).where(Book.genre.is_(None))).all()
+    updated = failed = 0
+    for book in missing:
+        try:
+            book.genre = open_library.genre_of(client, book.ol_key).value
+            updated += 1
+        except open_library.Unavailable:
+            failed += 1
+    db.commit()
+    return GenreFill(updated=updated, failed=failed)
 
 
 @router.get("/{id}", response_model=BookOut)

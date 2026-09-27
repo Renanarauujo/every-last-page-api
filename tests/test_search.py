@@ -52,6 +52,7 @@ def test_search(client):
             "pages": 256,
             "cover_id": 8231856,
             "cover_url": "https://covers.openlibrary.org/b/id/8231856-M.jpg",
+            "genre": "other",
         },
         {
             "ol_key": "/works/OL2W",
@@ -60,6 +61,7 @@ def test_search(client):
             "pages": None,
             "cover_id": None,
             "cover_url": None,
+            "genre": "other",
         },
     ]
     assert calls[0].url.params["q"] == "dom casmurro"

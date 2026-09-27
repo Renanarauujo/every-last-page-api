@@ -22,6 +22,22 @@ class Status(str, Enum):
     dropped = "dropped"
 
 
+class Genre(str, Enum):
+    """Book type, derived from Open Library subjects."""
+
+    fantasy = "fantasy"
+    science_fiction = "science_fiction"
+    fiction = "fiction"
+    mystery = "mystery"
+    poetry = "poetry"
+    education = "education"
+    religion = "religion"
+    philosophy = "philosophy"
+    biography = "biography"
+    history = "history"
+    other = "other"
+
+
 class Order(str, Enum):
     """Shelf ordering."""
 
@@ -68,6 +84,7 @@ class BookIn(BaseModel):
     author: str | None = Field(default=None, max_length=TITLE_MAX)
     pages: int | None = Field(default=None, ge=1)
     cover_id: int | None = Field(default=None, ge=1)
+    genre: Genre | None = None
 
 
 class BookEdit(BaseModel):
@@ -78,6 +95,7 @@ class BookEdit(BaseModel):
     status: Status | None = None
     rating: int | None = Field(default=None, ge=RATING_MIN, le=RATING_MAX)
     comment: str | None = Field(default=None, max_length=COMMENT_MAX)
+    genre: Genre | None = None
     started_at: date | None = Field(default=None, description="Start date (YYYY-MM-DD)")
     finished_at: date | None = Field(default=None, description="Finish or drop date (YYYY-MM-DD)")
 
@@ -93,6 +111,7 @@ class BookOut(BaseModel):
     author: str | None
     pages: int | None
     cover_id: int | None
+    genre: Genre | None
     status: Status
     rating: int | None
     comment: str | None
@@ -129,6 +148,22 @@ class Summary(BaseModel):
     by_month: list[MonthCount]
 
 
+class LikedGenre(BaseModel):
+    """Book type the reader rates well."""
+
+    genre: Genre
+    books: int
+    avg_rating: float
+
+
+class DislikedGenre(BaseModel):
+    """Book type with dropped or low-rated books."""
+
+    genre: Genre
+    dropped: int
+    low_rated: int
+
+
 class LikedAuthor(BaseModel):
     """Author the reader rates well."""
 
@@ -157,6 +192,8 @@ class Insights(BaseModel):
     """Reading profile built from started, read and dropped books."""
 
     books: int
+    liked_genres: list[LikedGenre]
+    disliked_genres: list[DislikedGenre]
     liked_authors: list[LikedAuthor]
     disliked_authors: list[DislikedAuthor]
     liked_pages: int | None
@@ -165,6 +202,13 @@ class Insights(BaseModel):
     avg_days: int | None
     pages_per_day: float | None
     favorite: Favorite | None
+
+
+class GenreFill(BaseModel):
+    """Result of filling missing book types."""
+
+    updated: int
+    failed: int
 
 
 class BookHit(BaseModel):
@@ -176,3 +220,4 @@ class BookHit(BaseModel):
     pages: int | None
     cover_id: int | None
     cover_url: str | None
+    genre: Genre
