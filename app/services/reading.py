@@ -61,12 +61,11 @@ def summary(books: list[Any], at: datetime) -> dict[str, Any]:
     done = [b for b in books if b.status == Status.read.value]
     ratings = [b.rating for b in books if b.rating is not None]
 
-    months = {m: {"month": m, "books": 0, "pages": 0} for m in _months(at)}
+    months = {m: {"month": m, "books": 0} for m in _months(at)}
     for book in done:
         key = book.finished_at.strftime("%Y-%m") if book.finished_at else None
         if key in months:
             months[key]["books"] += 1
-            months[key]["pages"] += book.pages or 0
 
     return {
         "total": len(books),

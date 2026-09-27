@@ -113,11 +113,10 @@ class BookOut(Schema):
 
 
 class MonthCount(Schema):
-    """Livros concluidos e paginas em um mes."""
+    """Livros concluidos em um mes."""
 
     month: str
     books: int
-    pages: int = Field(alias="paginas")
 
 
 class Summary(Schema):

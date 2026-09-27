@@ -153,8 +153,8 @@ def test_summary(client, book):
     assert (res["quero_ler"], res["lendo"], res["lidos"], res["abandonados"]) == (1, 1, 1, 0)
     assert res["paginas_lidas"] == 256
     assert res["nota_media"] == 4.5
-    last = res["lidos_por_mes"][-1]
-    assert (last["livros"], last["paginas"]) == (1, 256)
+    assert res["lidos_por_mes"][-1]["livros"] == 1
+    assert "paginas" not in res["lidos_por_mes"][-1]
 
 
 def test_dropped(client, book):

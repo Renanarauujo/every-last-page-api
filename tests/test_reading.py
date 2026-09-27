@@ -75,5 +75,5 @@ def test_summary_months():
     res = summary([old, recent, no_pages], TODAY)
     months = {m["month"]: m for m in res["by_month"]}
     assert list(months) == ["2026-04", "2026-05", "2026-06", "2026-07", "2026-08", "2026-09"]
-    assert (months["2026-08"]["books"], months["2026-08"]["pages"]) == (2, 50)
+    assert months["2026-08"] == {"month": "2026-08", "books": 2}
     assert (res["read"], res["pages_read"]) == (3, 250)
