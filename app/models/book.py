@@ -129,6 +129,44 @@ class Summary(BaseModel):
     by_month: list[MonthCount]
 
 
+class LikedAuthor(BaseModel):
+    """Author the reader rates well."""
+
+    author: str
+    books: int
+    avg_rating: float
+
+
+class DislikedAuthor(BaseModel):
+    """Author with dropped or low-rated books."""
+
+    author: str
+    dropped: int
+    low_rated: int
+
+
+class Favorite(BaseModel):
+    """Best rated book."""
+
+    title: str
+    author: str | None
+    rating: int
+
+
+class Insights(BaseModel):
+    """Reading profile built from started, read and dropped books."""
+
+    books: int
+    liked_authors: list[LikedAuthor]
+    disliked_authors: list[DislikedAuthor]
+    liked_pages: int | None
+    dropped_pages: int | None
+    completion_rate: int | None
+    avg_days: int | None
+    pages_per_day: float | None
+    favorite: Favorite | None
+
+
 class BookHit(BaseModel):
     """Open Library search result."""
 

@@ -6,9 +6,9 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.models.book import BookEdit, BookIn, BookOut, Order, Status, Summary
+from app.models.book import BookEdit, BookIn, BookOut, Insights, Order, Status, Summary
 from app.models.book_orm import Book
-from app.services import reading
+from app.services import insights, reading
 
 router = APIRouter(prefix="/shelf", tags=["shelf"])
 
@@ -59,6 +59,13 @@ def summary(db: Session = Depends(get_db)):
     """Return the dashboard numbers."""
     books = db.scalars(select(Book)).all()
     return Summary(**reading.summary(books, reading.now()))
+
+
+@router.get("/insights", response_model=Insights)
+def profile(db: Session = Depends(get_db)):
+    """Return the reading profile: liked and avoided authors, sizes and pace."""
+    books = db.scalars(select(Book)).all()
+    return Insights(**insights.insights(books))
 
 
 @router.get("/{id}", response_model=BookOut)
