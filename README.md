@@ -156,7 +156,7 @@ Os testes usam um banco SQLite em memória e simulam a Open Library, então roda
 - CORS com lista de origens permitidas, sem refletir o `Origin` recebido.
 - Headers `X-Content-Type-Options`, `X-Frame-Options`, `Content-Security-Policy`,
   `Referrer-Policy` e `Permissions-Policy` em todas as respostas.
-- Limite de 20 buscas por minuto por IP em `/books/search` (429 com `Retry-After`).
+- Limite de 60 buscas por minuto por IP em `/books/search` (429 com `Retry-After`).
 - Consultas pelo ORM, com parâmetros; a ordenação aceita apenas valores de uma lista fechada.
 - Falha ou demora da Open Library vira 502 com mensagem clara, sem detalhe interno.
 - O container roda com usuário sem privilégios.

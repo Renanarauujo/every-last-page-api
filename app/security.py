@@ -19,7 +19,7 @@ HEADERS = {
     "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
 }
 
-SEARCH_LIMIT = 20
+SEARCH_LIMIT = 60
 WINDOW = 60
 
 
