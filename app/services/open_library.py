@@ -55,9 +55,21 @@ def _parse(doc: Any) -> BookHit | None:
 
     return BookHit(
         ol_key=key,
-        title=str(title)[:TITLE_MAX],
-        author=", ".join(map(str, authors[:MAX_AUTHORS])) or None,
+        title=_fix(str(title))[:TITLE_MAX],
+        author=_fix(", ".join(map(str, authors[:MAX_AUTHORS]))) or None,
         pages=pages if isinstance(pages, int) and pages > 0 else None,
         cover_id=cover,
         cover_url=COVER_URL.format(id=cover) if cover else None,
     )
+
+
+def _fix(text: str) -> str:
+    """Corrige texto UTF-8 que a Open Library entrega decodificado como Latin-1."""
+    if "Ã" not in text and "Â" not in text:
+        return text
+    for encoding in ("latin-1", "cp1252"):
+        try:
+            return text.encode(encoding).decode("utf-8")
+        except UnicodeError:
+            continue
+    return text

@@ -96,3 +96,17 @@ def test_search_429(client):
     res = client.get("/books/search", params={"q": "dom"})
     assert res.status_code == 429
     assert int(res.headers["Retry-After"]) > 0
+
+
+def test_search_fixes_encoding(client):
+    doc = {"key": "/works/OL3W", "title": "MemÃ³rias pÃ³stumas", "author_name": ["JoÃ£o"]}
+    fake_ol(lambda r: httpx.Response(200, json={"docs": [doc]}))
+    res = client.get("/books/search", params={"q": "memorias"}).json()
+    assert (res[0]["title"], res[0]["author"]) == ("Memórias póstumas", "João")
+
+
+def test_search_keeps_valid_text(client):
+    doc = {"key": "/works/OL3W", "title": "Memórias Ã€ parte", "author_name": ["Â"]}
+    fake_ol(lambda r: httpx.Response(200, json={"docs": [doc]}))
+    res = client.get("/books/search", params={"q": "memorias"}).json()
+    assert res[0]["title"] == "Memórias Ã€ parte"
