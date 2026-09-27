@@ -63,7 +63,8 @@ Nenhuma chave é necessária: a Open Library é pública e não pede cadastro.
 | POST | `/shelf` | Adiciona um livro à estante | 201, 409, 422 |
 | GET | `/shelf?status=&order=` | Lista a estante, com filtro e ordenação | 200, 422 |
 | GET | `/shelf/summary` | Números do painel | 200 |
-| GET | `/shelf/insights` | Perfil de leitura: autores preferidos e evitados, tamanhos, ritmo e favorito | 200 |
+| GET | `/shelf/insights` | Perfil de leitura: tipos e autores preferidos e evitados (top 3), tamanhos, ritmo e favorito | 200 |
+| POST | `/shelf/genres?refresh=` | Preenche o tipo dos livros sem tipo (ou de todos, com `refresh=true`) a partir dos assuntos da Open Library | 200, 429 |
 | GET | `/shelf/{id}` | Detalha um livro | 200, 404 |
 | PUT | `/shelf/{id}` | Atualiza status, nota, comentário e datas de leitura | 200, 404, 422 |
 | DELETE | `/shelf/{id}` | Remove um livro | 204, 404 |
@@ -123,6 +124,10 @@ As datas registram o momento da troca de status; reenviar o status atual não al
    regra. A API recusa com 422 data no futuro, conclusão antes do início, datas em `want` e
    conclusão em `reading`.
 
+Cada livro tem um tipo (`genre`: `fantasy`, `science_fiction`, `fiction`, `mystery`, `poetry`,
+`education`, `religion`, `philosophy`, `biography`, `history`, `other`), calculado pelos assuntos
+da obra na Open Library e editável no PUT.
+
 A nota (`rating`) vai de 1 a 5 e o comentário (`comment`) tem até 500 caracteres. O mesmo livro
 (`ol_key`) não entra duas vezes na estante: a API responde 409.
 
@@ -140,6 +145,7 @@ app/
   routes/shelf.py           CRUD /shelf
   services/reading.py       regras de status e resumo
   services/insights.py      perfil de leitura
+  services/genres.py        tipo do livro a partir dos assuntos da Open Library
   services/open_library.py  cliente da Open Library
 tests/                      testes com pytest
 ```
