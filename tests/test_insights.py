@@ -45,7 +45,7 @@ def test_sizes_and_pace():
     assert res["completion_rate"] == 80
     assert res["avg_days"] == 6
     assert res["pages_per_day"] == round(1000 / 23, 1)
-    assert res["favorite"] == {"title": "A", "author": "Tolkien", "rating": 5}
+    assert res["favorite"] == {"title": "C", "author": "Chesterton", "rating": 5, "pages": 200, "days": 2, "pages_per_day": 100.0}
 
 
 def test_empty():
@@ -72,3 +72,14 @@ def test_group_is_never_liked_and_disliked():
     assert liked == {"Autor"}
     assert disliked == {"Outro"}
     assert not liked & disliked
+
+
+def test_favorite_rules():
+    fast = book("Rapido", "X", "read", 5, 300, 1, 4)
+    slow = book("Lento", "Y", "read", 5, 600, 1, 21)
+    four = book("Nota 4", "Z", "read", 4, 900, 1, 2)
+    dropped = book("Abandonado", "W", "dropped", 5, 900, 1, 2)
+    assert insights([fast, slow, four, dropped])["favorite"]["title"] == "Rapido"
+    no_dates = book("Sem datas", "V", "read", 5, 300)
+    assert insights([no_dates, four])["favorite"]["title"] == "Sem datas"
+    assert insights([book("Lendo", "U", "reading", 5, 100, 1)])["favorite"] is None

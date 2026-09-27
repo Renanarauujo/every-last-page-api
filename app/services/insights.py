@@ -104,9 +104,23 @@ def _avg(values: list[int]) -> int | None:
 
 
 def _favorite(books: list[Any]) -> dict[str, Any] | None:
-    """Livro de maior nota; em empate, o concluido mais recentemente."""
-    rated = [b for b in books if b.rating is not None]
-    if not rated:
+    """Livro lido de maior nota com mais paginas por dia; sem paginas ou datas, o concluido mais recente."""
+    read = [b for b in books if b.status == Status.read.value and b.rating is not None]
+    if not read:
         return None
-    best = max(rated, key=lambda b: (b.rating, b.finished_at or b.added_at))
-    return {"title": best.title, "author": author(best), "rating": best.rating}
+    top = max(b.rating for b in read)
+    best_rated = [b for b in read if b.rating == top]
+    timed = [b for b in best_rated if b.pages and _days(b)]
+    if timed:
+        best = max(timed, key=lambda b: (b.pages / _days(b), -_days(b)))
+    else:
+        best = max(best_rated, key=lambda b: b.finished_at or b.added_at)
+    days = _days(best)
+    return {
+        "title": best.title,
+        "author": author(best),
+        "rating": best.rating,
+        "pages": best.pages,
+        "days": days,
+        "pages_per_day": round(best.pages / days, DIGITS) if best.pages and days else None,
+    }

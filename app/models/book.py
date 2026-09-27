@@ -181,11 +181,14 @@ class DislikedAuthor(BaseModel):
 
 
 class Favorite(BaseModel):
-    """Best rated book."""
+    """Best rated read book, read at the highest pages per day."""
 
     title: str
     author: str | None
     rating: int
+    pages: int | None
+    days: int | None
+    pages_per_day: float | None
 
 
 class Insights(BaseModel):
