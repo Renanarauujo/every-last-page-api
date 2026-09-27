@@ -19,6 +19,9 @@ RULES: list[tuple[Genre, tuple[str, ...]]] = [
     (Genre.history, ("history", "historical", "war")),
 ]
 TIE_ORDER = [genre for genre, _ in RULES]
+FICTION_KINDS = (Genre.fantasy, Genre.science_fiction, Genre.mystery, Genre.poetry)
+# Um subgenero de ficcao vence o "Fiction" generico com mais da metade dos votos dele.
+FICTION_WEIGHT = 0.5
 
 
 def _vote(subject: str) -> Genre | None:
@@ -31,9 +34,25 @@ def _vote(subject: str) -> Genre | None:
 
 
 def classify(subjects: list[str] | None) -> Genre:
-    """Classifica o livro pelo tipo mais votado entre os assuntos; empate segue a ordem das regras."""
+    """Classifica o livro pelos votos dos assuntos, em duas etapas: subgenero contra ficcao generica, depois ficcao contra nao ficcao."""
     votes = Counter(g for g in map(_vote, subjects or []) if g)
     if not votes:
         return Genre.other
-    top = max(votes.values())
-    return next(g for g in TIE_ORDER if votes.get(g) == top)
+    kind = _best(votes, FICTION_KINDS)
+    fiction = votes[Genre.fiction]
+    if kind and votes[kind] > fiction * FICTION_WEIGHT:
+        return kind
+    block = fiction + sum(votes[k] for k in FICTION_KINDS)
+    other = _best(votes, [g for g in TIE_ORDER if g not in FICTION_KINDS and g is not Genre.fiction])
+    if other and votes[other] > block:
+        return other
+    return Genre.fiction if fiction else kind or other
+
+
+def _best(votes: Counter, genres: list[Genre] | tuple[Genre, ...]) -> Genre | None:
+    """Tipo mais votado entre os informados; empate segue a ordem das regras."""
+    present = [g for g in genres if votes[g]]
+    if not present:
+        return None
+    top = max(votes[g] for g in present)
+    return next(g for g in TIE_ORDER if g in present and votes[g] == top)

@@ -20,10 +20,15 @@ from app.services.genres import classify
         (["Fiction", "Psychological fiction", "Russian literature", "Mystery fiction"], Genre.fiction),
         (["Poetry", "Italian poetry", "Medieval Literature"], Genre.poetry),
         (["Fiction", "Historical fiction", "Catholic Church"], Genre.fiction),
+        (["Fantasy fiction", "Middle Earth", "Elves", "Hobbits", "Fiction", "English fiction", "Fiction", "Fiction", "Fiction"], Genre.fantasy),
+        (["Poetry", "Italian poetry", "Poems", "Literature", "Fiction", "Medieval literature", "Literatura"], Genre.poetry),
+        (["Fiction", "Brazilian fiction", "Religious", "Catholics"], Genre.fiction),
+        (["Fiction", "Christian life", "Christianity", "Apologetics", "Devil"], Genre.religion),
         ([], Genre.other),
         (None, Genre.other),
     ],
-    ids=["fantasia", "formacao", "religiao", "romance", "poesia", "ficcao-historica", "vazio", "nenhum"],
+    ids=["fantasia", "formacao", "religiao", "romance", "poesia", "ficcao-historica", "fantasia-vs-fiction",
+         "poesia-vs-literatura", "romance-vs-religiao", "religiao-vs-fiction", "vazio", "nenhum"],
 )
 def test_classify(subjects, expected):
     assert classify(subjects) is expected
@@ -50,7 +55,7 @@ def test_fill_genres(client, book):
 
     def handler(req):
         seen.append(req.url.params["q"])
-        return httpx.Response(200, json={"docs": [{"key": "/works/OL45804W", "subject": ["Fiction", "Brazilian fiction"]}]})
+        return httpx.Response(200, json={"docs": [{"key": "/works/OL45804W", "subject": ["Fiction", "Brazilian fiction", "Novel"]}]})
 
     app.dependency_overrides[open_library.get_client] = lambda: httpx.Client(transport=httpx.MockTransport(handler))
     res = client.post("/shelf/genres")
@@ -76,3 +81,27 @@ def test_migration_adds_genre_column(monkeypatch, tmp_path):
     monkeypatch.setattr(db_module, "engine", engine)
     db_module._add_missing_columns()
     assert "genre" in {c["name"] for c in inspect(engine).get_columns("books")}
+
+
+def test_fill_genres_uses_title_when_key_has_few_subjects(client, book):
+    client.post("/shelf", json=book)
+    seen = []
+
+    def handler(req):
+        seen.append(req.url.params["q"])
+        subjects = [] if req.url.params["q"].startswith("key:") else ["Fiction", "Brazilian fiction", "Novel"]
+        return httpx.Response(200, json={"docs": [{"subject": subjects}]})
+
+    app.dependency_overrides[open_library.get_client] = lambda: httpx.Client(transport=httpx.MockTransport(handler))
+    assert client.post("/shelf/genres").json() == {"updated": 1, "failed": 0}
+    assert seen == ["key:/works/OL45804W", "Dom Casmurro Machado de Assis"]
+    assert client.get("/shelf").json()[0]["genre"] == "fiction"
+
+
+def test_fill_genres_refresh(client, book):
+    client.post("/shelf", json={**book, "genre": "poetry"})
+    app.dependency_overrides[open_library.get_client] = lambda: httpx.Client(transport=httpx.MockTransport(
+        lambda r: httpx.Response(200, json={"docs": [{"subject": ["Fiction", "Novel", "Literature"]}]})))
+    assert client.post("/shelf/genres").json() == {"updated": 0, "failed": 0}
+    assert client.post("/shelf/genres", params={"refresh": "true"}).json() == {"updated": 1, "failed": 0}
+    assert client.get("/shelf").json()[0]["genre"] == "fiction"

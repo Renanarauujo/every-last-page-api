@@ -71,13 +71,18 @@ def profile(db: Session = Depends(get_db)):
 
 
 @router.post("/genres", response_model=GenreFill, dependencies=[Depends(search_limit)])
-def fill_genres(db: Session = Depends(get_db), client: httpx.Client = Depends(open_library.get_client)):
-    """Fill the type of books saved without one, using Open Library subjects."""
-    missing = db.scalars(select(Book).where(Book.genre.is_(None))).all()
+def fill_genres(
+    refresh: bool = False,
+    db: Session = Depends(get_db),
+    client: httpx.Client = Depends(open_library.get_client),
+):
+    """Fill the type of books saved without one (or of all books, with refresh=true), using Open Library subjects."""
+    query = select(Book) if refresh else select(Book).where(Book.genre.is_(None))
+    missing = db.scalars(query).all()
     updated = failed = 0
     for book in missing:
         try:
-            book.genre = open_library.genre_of(client, book.ol_key).value
+            book.genre = open_library.genre_of(client, book.ol_key, book.title, book.author).value
             updated += 1
         except open_library.Unavailable:
             failed += 1

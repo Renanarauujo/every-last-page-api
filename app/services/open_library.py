@@ -84,16 +84,32 @@ def _parse(doc: Any) -> BookHit | None:
     )
 
 
-def genre_of(client: httpx.Client, ol_key: str) -> Genre:
-    """Busca os assuntos de uma obra pela chave e retorna o tipo. Lanca `Unavailable` em caso de falha."""
+MIN_SUBJECTS = 3
+TITLE_DOCS = 3
+
+
+def genre_of(client: httpx.Client, ol_key: str, title: str = "", author: str | None = None) -> Genre:
+    """Retorna o tipo da obra pelos assuntos; com poucos assuntos, soma os de uma busca por titulo e autor."""
+    subjects = _subjects(client, {"q": f"key:{ol_key}", "limit": 1})
+    if len(subjects) < MIN_SUBJECTS and title:
+        subjects += _subjects(client, {"q": f"{title} {author or ''}".strip(), "limit": TITLE_DOCS})
+    return classify(subjects)
+
+
+def _subjects(client: httpx.Client, params: dict[str, Any]) -> list[str]:
+    """Assuntos dos documentos da busca. Lanca `Unavailable` em caso de falha."""
     try:
-        res = client.get(SEARCH_URL, params={"q": f"key:{ol_key}", "fields": "key,subject", "limit": 1})
+        res = client.get(SEARCH_URL, params={**params, "fields": "key,subject"})
         res.raise_for_status()
         docs = res.json().get("docs", [])
     except (httpx.HTTPError, ValueError, AttributeError) as err:
         raise Unavailable(str(err)) from err
-    subjects = docs[0].get("subject") if docs and isinstance(docs[0], dict) else None
-    return classify(subjects if isinstance(subjects, list) else None)
+    out = []
+    for doc in docs:
+        subjects = doc.get("subject") if isinstance(doc, dict) else None
+        if isinstance(subjects, list):
+            out += [s for s in subjects if isinstance(s, str)]
+    return out
 
 
 def _fix(text: str) -> str:
