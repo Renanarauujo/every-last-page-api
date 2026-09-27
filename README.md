@@ -1,5 +1,7 @@
 # Every Last Page API
 
+**MVP PUC-Rio · Every Last Page · Renan Araújo**
+
 API REST da estante pessoal de leitura do **Every Last Page**. Guarda os livros do usuário em
 SQLite, aplica as regras de status da leitura e busca livros na [Open Library](https://openlibrary.org),
 devolvendo os dados já tratados para o front.
