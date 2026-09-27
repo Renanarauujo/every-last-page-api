@@ -69,9 +69,13 @@ def get(id: int, db: Session = Depends(get_db)):
 
 @router.put("/{id}", response_model=BookOut)
 def update(id: int, data: BookEdit, db: Session = Depends(get_db)):
-    """Update status, rating and comment."""
+    """Update status, rating, comment and reading dates."""
     book = _find(db, id)
-    reading.update(book, data.model_dump(exclude_unset=True), reading.now())
+    try:
+        reading.update(book, data.model_dump(exclude_unset=True), reading.now())
+    except reading.InvalidDates as err:
+        db.rollback()
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(err))
     db.commit()
     return book
 

@@ -7,15 +7,21 @@ As datas registram o momento da troca de status. Reenviar o status atual nao alt
 3. `reading`: `started_at` recebe a data da troca e `finished_at` e apagada.
 4. `read`: `finished_at` recebe a data da troca; `started_at` tambem, se vazia.
 5. `dropped`: `finished_at` recebe a data do abandono e `started_at` e mantida.
+6. Datas enviadas no PUT substituem as da regra, se forem coerentes com o status.
 """
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import Any
 
 from app.models.book import Status
 
 MONTHS = 6
 DIGITS = 1
+NOON = 12
+
+
+class InvalidDates(ValueError):
+    """Datas incoerentes com o status ou entre si."""
 
 
 def now() -> datetime:
@@ -30,13 +36,37 @@ def init(book: Any, at: datetime) -> None:
 
 
 def update(book: Any, changes: dict[str, Any], at: datetime) -> None:
-    """Aplica uma atualizacao parcial com as regras 2 a 5."""
+    """Aplica uma atualizacao parcial com as regras 2 a 6. Lanca `InvalidDates` na regra 6."""
     for field in ("rating", "comment"):
         if field in changes:
             setattr(book, field, changes[field])
 
     if changes.get("status") is not None:
         _set_status(book, Status(changes["status"]), at)
+
+    dates = [f for f in ("started_at", "finished_at") if f in changes]
+    for field in dates:
+        setattr(book, field, _noon(changes[field]))
+    if dates:
+        _check_dates(book, at)
+
+
+def _noon(day: date | None) -> datetime | None:
+    """Converte uma data em meio-dia UTC, para nao mudar de dia no fuso do usuario."""
+    return datetime(day.year, day.month, day.day, NOON, tzinfo=timezone.utc) if day else None
+
+
+def _check_dates(book: Any, at: datetime) -> None:
+    """Valida as datas informadas contra o status e entre si."""
+    started, finished = book.started_at, book.finished_at
+    if book.status == Status.want.value and (started or finished):
+        raise InvalidDates("Livro em Quero ler nao tem datas de leitura.")
+    if book.status == Status.reading.value and finished:
+        raise InvalidDates("Livro em Lendo nao tem data de conclusao.")
+    if any(d and d.date() > at.date() for d in (started, finished)):
+        raise InvalidDates("A data nao pode estar no futuro.")
+    if started and finished and finished.date() < started.date():
+        raise InvalidDates("A conclusao nao pode ser anterior ao inicio.")
 
 
 def _set_status(book: Any, new: Status, at: datetime) -> None:

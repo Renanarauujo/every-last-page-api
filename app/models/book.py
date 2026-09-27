@@ -1,6 +1,6 @@
 """Esquemas de entrada e saida do livro."""
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -78,6 +78,8 @@ class BookEdit(BaseModel):
     status: Status | None = None
     rating: int | None = Field(default=None, ge=RATING_MIN, le=RATING_MAX)
     comment: str | None = Field(default=None, max_length=COMMENT_MAX)
+    started_at: date | None = Field(default=None, description="Start date (YYYY-MM-DD)")
+    finished_at: date | None = Field(default=None, description="Finish or drop date (YYYY-MM-DD)")
 
 
 class BookOut(BaseModel):

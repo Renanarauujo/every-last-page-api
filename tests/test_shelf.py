@@ -165,3 +165,21 @@ def test_dropped(client, book):
     assert res["started_at"] is not None and res["finished_at"] is not None
     summary = client.get("/shelf/summary").json()
     assert (summary["dropped"], summary["read"]) == (1, 0)
+
+
+def test_update_dates(client, book):
+    b = add(client, book)
+    client.put(f"/shelf/{b['id']}", json={"status": "read"})
+    res = client.put(f"/shelf/{b['id']}", json={"started_at": "2026-01-02", "finished_at": "2026-01-20"})
+    assert res.status_code == 200
+    assert res.json()["started_at"].startswith("2026-01-02T12:00")
+    assert res.json()["finished_at"].startswith("2026-01-20T12:00")
+
+
+def test_update_dates_invalid(client, book):
+    b = add(client, book)
+    res = client.put(f"/shelf/{b['id']}", json={"started_at": "2026-01-02"})
+    assert res.status_code == 422
+    assert res.json()["detail"] == "Livro em Quero ler nao tem datas de leitura."
+    assert client.get(f"/shelf/{b['id']}").json()["started_at"] is None
+    assert client.put(f"/shelf/{b['id']}", json={"started_at": "ontem"}).status_code == 422

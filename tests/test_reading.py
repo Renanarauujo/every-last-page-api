@@ -1,9 +1,11 @@
 """Testes das regras de status."""
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from types import SimpleNamespace
 
-from app.services.reading import init, summary, update
+import pytest
+
+from app.services.reading import InvalidDates, init, summary, update
 
 YESTERDAY = datetime(2026, 9, 25, tzinfo=timezone.utc)
 TODAY = datetime(2026, 9, 26, tzinfo=timezone.utc)
@@ -107,3 +109,27 @@ def test_summary_months():
     assert list(months) == ["2026-04", "2026-05", "2026-06", "2026-07", "2026-08", "2026-09"]
     assert months["2026-08"] == {"month": "2026-08", "books": 2}
     assert (res["read"], res["pages_read"]) == (3, 250)
+
+
+def test_rule_6_dates_replace_rule():
+    book = new_book()
+    update(book, {"status": "read"}, TODAY)
+    update(book, {"started_at": date(2026, 9, 1), "finished_at": date(2026, 9, 20)}, TODAY)
+    assert (book.started_at.day, book.finished_at.day, book.started_at.hour) == (1, 20, 12)
+
+
+@pytest.mark.parametrize(
+    "status,changes",
+    [
+        ("want", {"started_at": date(2026, 9, 1)}),
+        ("reading", {"finished_at": date(2026, 9, 1)}),
+        ("read", {"finished_at": date(2026, 12, 1)}),
+        ("read", {"started_at": date(2026, 9, 10), "finished_at": date(2026, 9, 1)}),
+    ],
+    ids=["want-sem-datas", "reading-sem-conclusao", "futuro", "conclusao-antes"],
+)
+def test_rule_6_invalid(status, changes):
+    book = new_book()
+    update(book, {"status": status}, TODAY)
+    with pytest.raises(InvalidDates):
+        update(book, changes, TODAY)
