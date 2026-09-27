@@ -18,7 +18,7 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(
     title="Every Last Page API",
-    description="Estante pessoal de leitura com busca na Open Library.",
+    description="Personal reading shelf with Open Library search.",
     version="1.0.0",
     lifespan=lifespan,
 )
@@ -30,7 +30,7 @@ app.include_router(books.router)
 app.include_router(shelf.router)
 
 
-@app.get("/", tags=["saude"])
+@app.get("/", tags=["health"])
 def root():
-    """Retorna o nome da API e o endereco da documentacao."""
-    return {"nome": app.title, "docs": "/docs"}
+    """Return the API name and the documentation address."""
+    return {"name": app.title, "docs": "/docs"}

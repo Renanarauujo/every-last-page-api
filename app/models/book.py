@@ -12,59 +12,27 @@ RATING_MAX = 5
 
 OL_KEY_RE = r"^/works/OL\d{1,12}W$"
 
-# Nome do campo no codigo e nome correspondente no JSON.
-JSON_NAMES = {
-    "title": "titulo",
-    "author": "autor",
-    "pages": "total_paginas",
-    "cover_id": "capa_id",
-    "cover_url": "capa_url",
-    "rating": "nota",
-    "comment": "comentario",
-    "added_at": "adicionado_em",
-    "started_at": "iniciado_em",
-    "finished_at": "concluido_em",
-    "want": "quero_ler",
-    "reading": "lendo",
-    "read": "lidos",
-    "dropped": "abandonados",
-    "pages_read": "paginas_lidas",
-    "avg_rating": "nota_media",
-    "by_month": "lidos_por_mes",
-    "month": "mes",
-    "books": "livros",
-}
-
-
-class Schema(BaseModel):
-    """Base dos esquemas, com os nomes do JSON em portugues."""
-
-    model_config = ConfigDict(
-        alias_generator=lambda name: JSON_NAMES.get(name, name),
-        populate_by_name=True,
-    )
-
 
 class Status(str, Enum):
-    """Status de leitura."""
+    """Reading status."""
 
-    want = "quero_ler"
-    reading = "lendo"
-    read = "lido"
-    dropped = "abandonado"
+    want = "want"
+    reading = "reading"
+    read = "read"
+    dropped = "dropped"
 
 
 class Order(str, Enum):
-    """Ordenacoes da listagem."""
+    """Shelf ordering."""
 
-    recent = "recentes"
-    oldest = "antigos"
-    title = "titulo"
-    rating = "nota"
+    recent = "recent"
+    oldest = "oldest"
+    title = "title"
+    rating = "rating"
 
 
-class BookIn(Schema):
-    """Entrada do POST /estante. Campos adicionais sao ignorados."""
+class BookIn(BaseModel):
+    """Body of POST /shelf. Extra fields are ignored."""
 
     model_config = ConfigDict(extra="ignore")
 
@@ -75,8 +43,8 @@ class BookIn(Schema):
     cover_id: int | None = Field(default=None, ge=1)
 
 
-class BookEdit(Schema):
-    """Entrada do PUT /estante/{id}. Apenas os campos enviados sao alterados."""
+class BookEdit(BaseModel):
+    """Body of PUT /shelf/{id}. Only the fields sent are changed."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -85,8 +53,8 @@ class BookEdit(Schema):
     comment: str | None = Field(default=None, max_length=COMMENT_MAX)
 
 
-class BookOut(Schema):
-    """Livro da estante na resposta."""
+class BookOut(BaseModel):
+    """Book on the shelf."""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -112,15 +80,15 @@ class BookOut(Schema):
         return value
 
 
-class MonthCount(Schema):
-    """Livros concluidos em um mes."""
+class MonthCount(BaseModel):
+    """Books read in a month."""
 
     month: str
     books: int
 
 
-class Summary(Schema):
-    """Indicadores do painel."""
+class Summary(BaseModel):
+    """Dashboard numbers."""
 
     total: int
     want: int
@@ -132,8 +100,8 @@ class Summary(Schema):
     by_month: list[MonthCount]
 
 
-class BookHit(Schema):
-    """Resultado da busca na Open Library."""
+class BookHit(BaseModel):
+    """Open Library search result."""
 
     ol_key: str
     title: str

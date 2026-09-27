@@ -4,7 +4,7 @@ FRONT = "http://localhost:8080"
 
 
 def test_headers(client):
-    for path in ("/saude", "/estante/999"):
+    for path in ("/health", "/shelf/999"):
         h = client.get(path).headers
         assert h["X-Content-Type-Options"] == "nosniff"
         assert h["X-Frame-Options"] == "DENY"
@@ -13,18 +13,18 @@ def test_headers(client):
 
 
 def test_cors_front(client):
-    res = client.get("/saude", headers={"Origin": FRONT})
+    res = client.get("/health", headers={"Origin": FRONT})
     assert res.headers["access-control-allow-origin"] == FRONT
 
 
 def test_cors_unknown(client):
-    res = client.get("/saude", headers={"Origin": "https://site-malicioso.example"})
+    res = client.get("/health", headers={"Origin": "https://site-malicioso.example"})
     assert "access-control-allow-origin" not in res.headers
 
 
 def test_cors_preflight(client):
     res = client.options(
-        "/estante/1", headers={"Origin": FRONT, "Access-Control-Request-Method": "PUT"}
+        "/shelf/1", headers={"Origin": FRONT, "Access-Control-Request-Method": "PUT"}
     )
     assert res.status_code == 200
     assert "PUT" in res.headers["access-control-allow-methods"]

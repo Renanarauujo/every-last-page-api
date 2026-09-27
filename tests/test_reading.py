@@ -26,81 +26,81 @@ def dates(book):
 
 def test_rule_1_want():
     book = new_book()
-    assert (book.status, book.added_at) == ("quero_ler", YESTERDAY)
+    assert (book.status, book.added_at) == ("want", YESTERDAY)
     assert dates(book) == (None, None)
 
 
 def test_rule_2_back_to_want():
     book = new_book()
-    update(book, {"status": "lendo"}, YESTERDAY)
-    update(book, {"status": "quero_ler"}, TODAY)
+    update(book, {"status": "reading"}, YESTERDAY)
+    update(book, {"status": "want"}, TODAY)
     assert dates(book) == (None, None)
 
 
 def test_rule_3_reading():
     book = new_book()
-    update(book, {"status": "lendo"}, TODAY)
+    update(book, {"status": "reading"}, TODAY)
     assert dates(book) == (TODAY, None)
 
 
 def test_rule_3_reading_again():
     book = new_book()
-    update(book, {"status": "lendo"}, YESTERDAY)
-    update(book, {"status": "lido"}, TODAY)
-    update(book, {"status": "lendo"}, LATER)
+    update(book, {"status": "reading"}, YESTERDAY)
+    update(book, {"status": "read"}, TODAY)
+    update(book, {"status": "reading"}, LATER)
     assert dates(book) == (LATER, None)
 
 
 def test_rule_4_read():
     book = new_book()
-    update(book, {"status": "lendo"}, YESTERDAY)
-    update(book, {"status": "lido"}, TODAY)
+    update(book, {"status": "reading"}, YESTERDAY)
+    update(book, {"status": "read"}, TODAY)
     assert dates(book) == (YESTERDAY, TODAY)
 
 
 def test_rule_4_read_directly():
     book = new_book()
-    update(book, {"status": "lido"}, TODAY)
+    update(book, {"status": "read"}, TODAY)
     assert dates(book) == (TODAY, TODAY)
 
 
 def test_same_status_keeps_dates():
     book = new_book()
-    update(book, {"status": "lendo"}, YESTERDAY)
-    update(book, {"status": "lendo"}, TODAY)
-    update(book, {"status": "lido"}, TODAY)
-    update(book, {"status": "lido"}, LATER)
+    update(book, {"status": "reading"}, YESTERDAY)
+    update(book, {"status": "reading"}, TODAY)
+    update(book, {"status": "read"}, TODAY)
+    update(book, {"status": "read"}, LATER)
     assert dates(book) == (YESTERDAY, TODAY)
 
 
 def test_rule_5_dropped():
     book = new_book()
-    update(book, {"status": "lendo"}, YESTERDAY)
-    update(book, {"status": "lido"}, TODAY)
-    update(book, {"status": "abandonado"}, LATER)
-    assert book.status == "abandonado"
+    update(book, {"status": "reading"}, YESTERDAY)
+    update(book, {"status": "read"}, TODAY)
+    update(book, {"status": "dropped"}, LATER)
+    assert book.status == "dropped"
     assert dates(book) == (YESTERDAY, LATER)
 
 
 def test_rule_5_dropped_without_start():
     book = new_book()
-    update(book, {"status": "abandonado"}, TODAY)
+    update(book, {"status": "dropped"}, TODAY)
     assert dates(book) == (None, TODAY)
 
 
 def test_rating_keeps_status():
     book = new_book()
     update(book, {"rating": 1, "comment": "Nao terminei"}, TODAY)
-    assert (book.rating, book.comment, book.status) == (1, "Nao terminei", "quero_ler")
+    assert (book.rating, book.comment, book.status) == (1, "Nao terminei", "want")
 
 
 def test_summary_months():
     old = new_book()
-    update(old, {"status": "lido"}, datetime(2025, 1, 10, tzinfo=timezone.utc))
+    update(old, {"status": "read"}, datetime(2025, 1, 10, tzinfo=timezone.utc))
     recent = new_book(pages=50)
-    update(recent, {"status": "lido"}, datetime(2026, 8, 3, tzinfo=timezone.utc))
+    update(recent, {"status": "read"}, datetime(2026, 8, 3, tzinfo=timezone.utc))
     no_pages = new_book(pages=None)
-    update(no_pages, {"status": "lido"}, datetime(2026, 8, 9, tzinfo=timezone.utc))
+    update(no_pages, {"status": "read"}, datetime(2026, 8, 9, tzinfo=timezone.utc))
 
     res = summary([old, recent, no_pages], TODAY)
     months = {m["month"]: m for m in res["by_month"]}

@@ -6,7 +6,7 @@ from collections.abc import Iterator
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./estante.db")
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./shelf.db")
 
 _ARGS = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
 

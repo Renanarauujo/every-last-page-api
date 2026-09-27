@@ -13,10 +13,10 @@ from app.security import search_limit
 
 BOOK = {
     "ol_key": "/works/OL45804W",
-    "titulo": "Dom Casmurro",
-    "autor": "Machado de Assis",
-    "total_paginas": 256,
-    "capa_id": 8231856,
+    "title": "Dom Casmurro",
+    "author": "Machado de Assis",
+    "pages": 256,
+    "cover_id": 8231856,
 }
 
 
@@ -45,5 +45,5 @@ def client():
 
 @pytest.fixture
 def book():
-    """Corpo valido de POST /estante."""
+    """Corpo valido de POST /shelf."""
     return dict(BOOK)

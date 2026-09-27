@@ -1,4 +1,4 @@
-"""Tabela `livro`."""
+"""Tabela `books`."""
 
 from datetime import datetime
 
@@ -11,23 +11,23 @@ from app.db import Base
 class Book(Base):
     """Livro da estante."""
 
-    __tablename__ = "livro"
+    __tablename__ = "books"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
 
     # Dados da Open Library.
     ol_key: Mapped[str] = mapped_column(String(40), unique=True, index=True)
-    title: Mapped[str] = mapped_column("titulo", String(300))
-    author: Mapped[str | None] = mapped_column("autor", String(300))
-    pages: Mapped[int | None] = mapped_column("total_paginas", Integer)
-    cover_id: Mapped[int | None] = mapped_column("capa_id", Integer)
+    title: Mapped[str] = mapped_column(String(300))
+    author: Mapped[str | None] = mapped_column(String(300))
+    pages: Mapped[int | None] = mapped_column(Integer)
+    cover_id: Mapped[int | None] = mapped_column(Integer)
 
     # Dados do usuario.
     status: Mapped[str] = mapped_column(String(20))
-    rating: Mapped[int | None] = mapped_column("nota", Integer)
-    comment: Mapped[str | None] = mapped_column("comentario", String(500))
+    rating: Mapped[int | None] = mapped_column(Integer)
+    comment: Mapped[str | None] = mapped_column(String(500))
 
     # Datas preenchidas pela API.
-    added_at: Mapped[datetime] = mapped_column("adicionado_em", DateTime(timezone=True))
-    started_at: Mapped[datetime | None] = mapped_column("iniciado_em", DateTime(timezone=True))
-    finished_at: Mapped[datetime | None] = mapped_column("concluido_em", DateTime(timezone=True))
+    added_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

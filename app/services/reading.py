@@ -2,11 +2,11 @@
 
 As datas registram o momento da troca de status. Reenviar o status atual nao altera datas.
 
-1. Todo livro entra como `quero_ler`, sem datas de leitura.
-2. `quero_ler`: `iniciado_em` e `concluido_em` sao apagadas.
-3. `lendo`: `iniciado_em` recebe a data da troca e `concluido_em` e apagada.
-4. `lido`: `concluido_em` recebe a data da troca; `iniciado_em` tambem, se vazia.
-5. `abandonado`: `concluido_em` recebe a data do abandono e `iniciado_em` e mantida.
+1. Todo livro entra como `want`, sem datas de leitura.
+2. `want`: `started_at` e `finished_at` sao apagadas.
+3. `reading`: `started_at` recebe a data da troca e `finished_at` e apagada.
+4. `read`: `finished_at` recebe a data da troca; `started_at` tambem, se vazia.
+5. `dropped`: `finished_at` recebe a data do abandono e `started_at` e mantida.
 """
 
 from datetime import datetime, timezone
