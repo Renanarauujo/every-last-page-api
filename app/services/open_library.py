@@ -7,7 +7,7 @@ from typing import Any
 
 import httpx
 
-from app.models.book import OL_KEY_RE, TITLE_MAX, BookHit
+from app.models.book import OL_KEY_RE, TITLE_MAX, BookHit, Language, SearchField, SearchSort
 
 SEARCH_URL = "https://openlibrary.org/search.json"
 COVER_URL = "https://covers.openlibrary.org/b/id/{id}-M.jpg"
@@ -29,10 +29,28 @@ def get_client() -> Iterator[httpx.Client]:
         yield client
 
 
-def search(client: httpx.Client, q: str, limit: int) -> list[BookHit]:
+def search(
+    client: httpx.Client,
+    q: str,
+    limit: int,
+    field: SearchField = SearchField.all,
+    language: Language = Language.any,
+    sort: SearchSort = SearchSort.relevance,
+) -> list[BookHit]:
     """Busca livros na Open Library. Lanca `Unavailable` em caso de falha."""
+    params = {"fields": FIELDS, "limit": limit}
+    if field is SearchField.all:
+        params["q"] = q
+    elif field is SearchField.isbn:
+        params["q"] = f"isbn:{q}"
+    else:
+        params[field.value] = q
+    if language is not Language.any:
+        params["language"] = language.value
+    if sort is not SearchSort.relevance:
+        params["sort"] = sort.value
     try:
-        res = client.get(SEARCH_URL, params={"q": q, "fields": FIELDS, "limit": limit})
+        res = client.get(SEARCH_URL, params=params)
         res.raise_for_status()
         docs = res.json().get("docs", [])
     except (httpx.HTTPError, ValueError, AttributeError) as err:

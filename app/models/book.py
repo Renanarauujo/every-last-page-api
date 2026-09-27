@@ -31,6 +31,33 @@ class Order(str, Enum):
     rating = "rating"
 
 
+class SearchField(str, Enum):
+    """Search field."""
+
+    all = "all"
+    title = "title"
+    author = "author"
+    isbn = "isbn"
+
+
+class Language(str, Enum):
+    """Book language (MARC codes used by Open Library)."""
+
+    any = "any"
+    por = "por"
+    eng = "eng"
+    spa = "spa"
+    fre = "fre"
+
+
+class SearchSort(str, Enum):
+    """Search ordering."""
+
+    relevance = "relevance"
+    new = "new"
+    old = "old"
+
+
 class BookIn(BaseModel):
     """Body of POST /shelf. Extra fields are ignored."""
 

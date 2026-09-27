@@ -87,6 +87,9 @@ def test_search_invalid(client):
     fake_ol(lambda r: httpx.Response(200, json=OL_RESPONSE))
     assert client.get("/books/search", params={"q": "a"}).status_code == 422
     assert client.get("/books/search", params={"q": "dom", "limit": 50}).status_code == 422
+    assert client.get("/books/search", params={"q": "dom", "field": "year"}).status_code == 422
+    assert client.get("/books/search", params={"q": "dom", "language": "xx"}).status_code == 422
+    assert client.get("/books/search", params={"q": "123", "field": "isbn"}).status_code == 422
 
 
 def test_search_429(client):
@@ -103,3 +106,21 @@ def test_search_normalizes_accents(client):
     fake_ol(lambda r: httpx.Response(200, json={"docs": [doc]}))
     res = client.get("/books/search", params={"q": "sertao"}).json()
     assert res[0]["author"] == "João Guimarães Rosa"
+
+
+@pytest.mark.parametrize(
+    "params,expected",
+    [
+        ({"q": "machado"}, {"q": "machado"}),
+        ({"q": "machado", "field": "author"}, {"author": "machado"}),
+        ({"q": "dom", "field": "title", "language": "por", "sort": "new"}, {"title": "dom", "language": "por", "sort": "new"}),
+        ({"q": "978-85-359-0277-7", "field": "isbn"}, {"q": "isbn:9788535902777"}),
+    ],
+    ids=["all", "author", "title-por-new", "isbn"],
+)
+def test_search_filters(client, params, expected):
+    calls = fake_ol(lambda r: httpx.Response(200, json={"docs": []}))
+    assert client.get("/books/search", params=params).status_code == 200
+    sent = dict(calls[0].url.params)
+    for key, value in expected.items():
+        assert sent[key] == value
