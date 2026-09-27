@@ -1,6 +1,7 @@
 """Cliente da Search API da Open Library."""
 
 import re
+import unicodedata
 from collections.abc import Iterator
 from typing import Any
 
@@ -64,12 +65,5 @@ def _parse(doc: Any) -> BookHit | None:
 
 
 def _fix(text: str) -> str:
-    """Corrige texto UTF-8 que a Open Library entrega decodificado como Latin-1."""
-    if "Ã" not in text and "Â" not in text:
-        return text
-    for encoding in ("latin-1", "cp1252"):
-        try:
-            return text.encode(encoding).decode("utf-8")
-        except UnicodeError:
-            continue
-    return text
+    """Normaliza o texto para a forma composta (NFC)."""
+    return unicodedata.normalize("NFC", text)
