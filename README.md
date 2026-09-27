@@ -64,7 +64,7 @@ Nenhuma chave é necessária: a Open Library é pública e não pede cadastro.
 | GET | `/shelf?status=&order=` | Lista a estante, com filtro e ordenação | 200, 422 |
 | GET | `/shelf/summary` | Números do painel | 200 |
 | GET | `/shelf/{id}` | Detalha um livro | 200, 404 |
-| PUT | `/shelf/{id}` | Atualiza status, nota e comentário | 200, 404, 422 |
+| PUT | `/shelf/{id}` | Atualiza status, nota, comentário e datas de leitura | 200, 404, 422 |
 | DELETE | `/shelf/{id}` | Remove um livro | 204, 404 |
 
 A documentação interativa, com os esquemas de cada corpo, está em `/docs`.
@@ -118,6 +118,9 @@ As datas registram o momento da troca de status; reenviar o status atual não al
 3. `reading`: `started_at` recebe a data da troca e `finished_at` é apagada.
 4. `read`: `finished_at` recebe a data da troca; `started_at` também, se estiver vazia.
 5. `dropped`: `finished_at` recebe a data do abandono e `started_at` é mantida.
+6. `started_at` e `finished_at` também podem ser enviadas no PUT (`AAAA-MM-DD`) e substituem as da
+   regra. A API recusa com 422 data no futuro, conclusão antes do início, datas em `want` e
+   conclusão em `reading`.
 
 A nota (`rating`) vai de 1 a 5 e o comentário (`comment`) tem até 500 caracteres. O mesmo livro
 (`ol_key`) não entra duas vezes na estante: a API responde 409.
