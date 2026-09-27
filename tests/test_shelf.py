@@ -162,6 +162,6 @@ def test_dropped(client, book):
     client.put(f"/estante/{b['id']}", json={"status": "lendo"})
     res = client.put(f"/estante/{b['id']}", json={"status": "abandonado"}).json()
     assert res["status"] == "abandonado"
-    assert res["iniciado_em"] is not None and res["concluido_em"] is None
+    assert res["iniciado_em"] is not None and res["concluido_em"] is not None
     summary = client.get("/estante/resumo").json()
     assert (summary["abandonados"], summary["lidos"]) == (1, 0)

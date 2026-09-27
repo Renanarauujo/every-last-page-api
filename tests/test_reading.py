@@ -17,45 +17,75 @@ def new_book(pages=200):
     return book
 
 
+LATER = datetime(2026, 9, 27, tzinfo=timezone.utc)
+
+
+def dates(book):
+    return (book.started_at, book.finished_at)
+
+
 def test_rule_1_want():
     book = new_book()
     assert (book.status, book.added_at) == ("quero_ler", YESTERDAY)
+    assert dates(book) == (None, None)
 
 
-def test_rule_2_started_once():
+def test_rule_2_back_to_want():
     book = new_book()
     update(book, {"status": "lendo"}, YESTERDAY)
     update(book, {"status": "quero_ler"}, TODAY)
+    assert dates(book) == (None, None)
+
+
+def test_rule_3_reading():
+    book = new_book()
     update(book, {"status": "lendo"}, TODAY)
-    assert book.started_at == YESTERDAY
+    assert dates(book) == (TODAY, None)
 
 
-def test_rule_3_finished():
+def test_rule_3_reading_again():
+    book = new_book()
+    update(book, {"status": "lendo"}, YESTERDAY)
+    update(book, {"status": "lido"}, TODAY)
+    update(book, {"status": "lendo"}, LATER)
+    assert dates(book) == (LATER, None)
+
+
+def test_rule_4_read():
+    book = new_book()
+    update(book, {"status": "lendo"}, YESTERDAY)
+    update(book, {"status": "lido"}, TODAY)
+    assert dates(book) == (YESTERDAY, TODAY)
+
+
+def test_rule_4_read_directly():
     book = new_book()
     update(book, {"status": "lido"}, TODAY)
-    assert book.finished_at == TODAY
+    assert dates(book) == (TODAY, TODAY)
 
 
-def test_rule_3_finished_once():
+def test_same_status_keeps_dates():
     book = new_book()
-    update(book, {"status": "lido"}, YESTERDAY)
-    update(book, {"status": "lido"}, TODAY)
-    assert book.finished_at == YESTERDAY
-
-
-def test_rule_4_unfinished():
-    book = new_book()
-    update(book, {"status": "lido"}, TODAY)
+    update(book, {"status": "lendo"}, YESTERDAY)
     update(book, {"status": "lendo"}, TODAY)
-    assert book.finished_at is None
-    assert book.status == "lendo"
+    update(book, {"status": "lido"}, TODAY)
+    update(book, {"status": "lido"}, LATER)
+    assert dates(book) == (YESTERDAY, TODAY)
 
 
 def test_rule_5_dropped():
     book = new_book()
-    update(book, {"status": "lido"}, YESTERDAY)
+    update(book, {"status": "lendo"}, YESTERDAY)
+    update(book, {"status": "lido"}, TODAY)
+    update(book, {"status": "abandonado"}, LATER)
+    assert book.status == "abandonado"
+    assert dates(book) == (YESTERDAY, LATER)
+
+
+def test_rule_5_dropped_without_start():
+    book = new_book()
     update(book, {"status": "abandonado"}, TODAY)
-    assert (book.status, book.finished_at) == ("abandonado", None)
+    assert dates(book) == (None, TODAY)
 
 
 def test_rating_keeps_status():

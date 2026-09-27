@@ -1,10 +1,12 @@
 """Regras de status e resumo da estante.
 
-1. Todo livro entra como `quero_ler`.
-2. Ao passar para `lendo`, `iniciado_em` e preenchida, se vazia.
-3. Ao passar para `lido`, `concluido_em` e preenchida, se vazia.
-4. Ao sair de `lido`, `concluido_em` e apagada.
-5. `abandonado` encerra a leitura sem data de conclusao.
+As datas registram o momento da troca de status. Reenviar o status atual nao altera datas.
+
+1. Todo livro entra como `quero_ler`, sem datas de leitura.
+2. `quero_ler`: `iniciado_em` e `concluido_em` sao apagadas.
+3. `lendo`: `iniciado_em` recebe a data da troca e `concluido_em` e apagada.
+4. `lido`: `concluido_em` recebe a data da troca; `iniciado_em` tambem, se vazia.
+5. `abandonado`: `concluido_em` recebe a data do abandono e `iniciado_em` e mantida.
 """
 
 from datetime import datetime, timezone
@@ -28,7 +30,7 @@ def init(book: Any, at: datetime) -> None:
 
 
 def update(book: Any, changes: dict[str, Any], at: datetime) -> None:
-    """Aplica uma atualizacao parcial com as regras 2 a 4."""
+    """Aplica uma atualizacao parcial com as regras 2 a 5."""
     for field in ("rating", "comment"):
         if field in changes:
             setattr(book, field, changes[field])
@@ -39,17 +41,22 @@ def update(book: Any, changes: dict[str, Any], at: datetime) -> None:
 
 def _set_status(book: Any, new: Status, at: datetime) -> None:
     """Altera o status e as datas correspondentes."""
-    old = book.status
+    if book.status == new.value:
+        return
     book.status = new.value
 
-    if new is Status.reading and book.started_at is None:
-        book.started_at = at
-
-    if new is Status.read:
-        if book.finished_at is None:
-            book.finished_at = at
-    elif old == Status.read.value:
+    if new is Status.want:
+        book.started_at = None
         book.finished_at = None
+    elif new is Status.reading:
+        book.started_at = at
+        book.finished_at = None
+    elif new is Status.read:
+        book.finished_at = at
+        if book.started_at is None:
+            book.started_at = at
+    else:
+        book.finished_at = at
 
 
 def summary(books: list[Any], at: datetime) -> dict[str, Any]:
